@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Office {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  users            User[]
+  firmalar         Firma[]
+  beyannameler     Beyanname[]
+  gorevler         Gorev[]
+  mesajlar         OfisMesaj[]
+  tebligatlar      Tebligat[]
+  odemeBildirimleri OdemeBildirimi[]
+  cariHareketler   CariHareket[]
+  yevmiyeler       Yevmiye[]
+  mevzuatlar       Mevzuat[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("SAHIP")
+  officeId     String
+  createdAt    DateTime @default(now())
+
+  office  Office      @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  mesajlar OfisMesaj[]
+}
+
+model Firma {
+  id        String   @id @default(cuid())
+  officeId  String
+  unvan     String
+  vkn       String
+  tip       String   @default("KURUM")
+  telefon   String?
+  email     String?
+  notlar    String?
+  createdAt DateTime @default(now())
+
+  office            Office           @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  beyannameler      Beyanname[]
+  gorevler          Gorev[]
+  tebligatlar       Tebligat[]
+  odemeBildirimleri OdemeBildirimi[]
+  cariHareketler    CariHareket[]
+
+  @@index([officeId])
+}
+
+model Beyanname {
+  id         String   @id @default(cuid())
+  officeId   String
+  firmaId    String?
+  tip        String
+  donem      String
+  sonTarih   DateTime
+  durum      String   @default("HAZIR")
+  tamamlanan Int      @default(0)
+  toplam     Int      @default(1)
+  createdAt  DateTime @default(now())
+
+  office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  firma  Firma? @relation(fields: [firmaId], references: [id], onDelete: SetNull)
+
+  @@index([officeId])
+}
+
+model Gorev {
+  id       String    @id @default(cuid())
+  officeId String
+  firmaId  String?
+  baslik   String
+  sonTarih DateTime?
+  durum    String    @default("BEKLEYEN")
+  createdAt DateTime @default(now())
+
+  office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  firma  Firma? @relation(fields: [firmaId], references: [id], onDelete: SetNull)
+
+  @@index([officeId])
+}
+
+model OfisMesaj {
+  id        String   @id @default(cuid())
+  officeId  String
+  yazarId   String?
+  icerik    String
+  createdAt DateTime @default(now())
+
+  office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  yazar  User?  @relation(fields: [yazarId], references: [id], onDelete: SetNull)
+
+  @@index([officeId])
+}
+
+model Tebligat {
+  id       String   @id @default(cuid())
+  officeId String
+  firmaId  String?
+  konu     String
+  tarih    DateTime @default(now())
+  okundu   Boolean  @default(false)
+  detay    String?
+
+  office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  firma  Firma? @relation(fields: [firmaId], references: [id], onDelete: SetNull)
+
+  @@index([officeId])
+}
+
+model OdemeBildirimi {
+  id       String   @id @default(cuid())
+  officeId String
+  firmaId  String
+  donem    String
+  not      String?
+  createdAt DateTime @default(now())
+
+  office Office        @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  firma  Firma         @relation(fields: [firmaId], references: [id], onDelete: Cascade)
+  kalemler OdemeKalemi[]
+
+  @@index([officeId])
+}
+
+model OdemeKalemi {
+  id         String    @id @default(cuid())
+  bildirimId String
+  tur        String
+  tutar      Float
+  sonTarih   DateTime?
+  not        String?
+
+  bildirim OdemeBildirimi @relation(fields: [bildirimId], references: [id], onDelete: Cascade)
+}
+
+model CariHareket {
+  id       String   @id @default(cuid())
+  officeId String
+  firmaId  String
+  tarih    DateTime
+  aciklama String
+  borc     Float    @default(0)
+  alacak   Float    @default(0)
+
+  office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  firma  Firma  @relation(fields: [firmaId], references: [id], onDelete: Cascade)
+
+  @@index([officeId])
+  @@index([firmaId])
+}
+
+model Yevmiye {
+  id       String   @id @default(cuid())
+  officeId String
+  tarih    DateTime
+  evrakNo  String?
+  hesap    String
+  borc     Float    @default(0)
+  alacak   Float    @default(0)
+  aciklama String?
+
+  office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+
+  @@index([officeId])
+}
+
+model Mevzuat {
+  id       String   @id @default(cuid())
+  officeId String?
+  kaynak   String
+  baslik   String
+  ozet     String
+  tarih    DateTime
+  onem     String   @default("NORMAL")
+  yeni     Boolean  @default(true)
+
+  office Office? @relation(fields: [officeId], references: [id], onDelete: Cascade)
+
+  @@index([officeId])
+}
