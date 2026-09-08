@@ -1,9 +1,10 @@
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
+import { prisma } from "../src/lib/prisma";
 
 async function main() {
+  if (process.env.TURSO_DATABASE_URL && (await prisma.office.count()) > 0) {
+    throw new Error("Uzak veritabanı boş değil; demo kurulumu mevcut verileri silemez.");
+  }
   await prisma.odemeKalemi.deleteMany();
   await prisma.odemeBildirimi.deleteMany();
   await prisma.cariHareket.deleteMany();
